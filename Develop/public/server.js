@@ -1,55 +1,86 @@
+// [ { "title": "test", "text": "testtext", "id": 1 } ]
+// Requirements
 const http = require("http");
 const fs = require("fs");
 const express = require("express");
 const path = require("path");
 
+// Json file
+let db = [];
+fs.readFile("../db/db.json", "utf8", function(err, data) {
+    if (err) throw err;
+    console.log(data);
+    db.push(data);
+    db = db[0];
+    console.log(db);
+});
+
 // Set up express
 const app = express();
-
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
 // Set up the server
 const PORT = 8080;
 
-const server = http.createServer(handleRequest);
+// Routes
+// ====================================================
+app.get("/notes", function(req, res) {
+    res.sendFile(path.join(__dirname, "notes.html"));
+});
 
-function handleRequest(req, res) {
+app.get("/script.js", function(req, res) {
+    res.sendFile(path.join(__dirname, "script.js"))
+});
 
-    // URL the request is being made to
-    var path = req.url;
-    console.log(path);
+app.get("/styles.css", function(req, res) {
+    res.sendFile(path.join(__dirname, "styles.css"))
+});
 
-    // Handles the different url's used
-    switch (path) {
+app.get("*", function(req, res) {
+    res.sendFile(path.join(__dirname, "index.html"));
+});
 
-        case "/notes":
-            return fs.readFile(__dirname + "/notes.html", function(err, data) {
-                if (err) throw err;
-                res.writeHead(200, { "Content-Type": "text/html" });
-                res.end(data);
-            });
+// API Routes
+// ====================================================
+app.get("/api/notes", function(req, res) {
+    res.json(db);
+});
 
-        case "*":
-            return fs.readFile(__dirname + "/index.html", function(err, data) {
-                if (err) throw err;
-                res.writeHead(200, { "Content-Type": "text/html" });
-                res.end(data);
-            });
+app.post("/api/notes", function(req, res) {
+    let nextId = db.length + 1;
 
-        case "/script.js":
-            return fs.readFile(__dirname + "/script.js", function(err, data) {
-                if (err) throw err;
-                res.end(data);
-            });
-
-        default:
-            return fs.readFile(__dirname + "/index.html", function(err, data) {
-                if (err) throw err;
-                res.writeHead(200, { "Content-Type": "text/html" });
-                res.end(data);
-            });
+    let newNote = {
+        title: req.body.title,
+        text: req.body.text,
+        id: nextId
     };
-};
+    console.log(newNote);
+    db.push(newNote);
+    console.log(db);
+    fs.writeFile("../db/db.json", db, function(err) {
+        if (err) throw err;
+        console.log("Added note successfully")
+    });
+});
 
-server.listen(PORT, function() {
-    console.log("Server is lisenting on PORT: " + PORT);
+app.delete("/api/notes/:id", function(req, res) {
+    let chosen = req.params.id;
+
+    for (let i=0; i<db.length; i++) {
+        if (chosen == db[i].id) {
+            db.splice(i, 1);
+        }
+    }
+
+    fs.writeFile("../db/db.json", db, function(err) {
+        if (err) throw err;
+        console.log("Deleted note successfully");
+    })
+});
+
+
+
+app.listen(PORT, function() {
+    console.log("App is lisenting on PORT: " + PORT);
 });
