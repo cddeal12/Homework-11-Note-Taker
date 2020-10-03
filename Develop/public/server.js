@@ -1,6 +1,5 @@
 // [ { "title": "test", "text": "testtext", "id": 1 } ]
 // Requirements
-const http = require("http");
 const fs = require("fs");
 const express = require("express");
 const path = require("path");
@@ -21,7 +20,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // Set up the server
-const PORT = 8080;
+const PORT = process.env.PORT || 3001;
 
 // Routes
 // ====================================================
